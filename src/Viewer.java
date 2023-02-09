@@ -48,10 +48,19 @@ public class Viewer extends JPanel {
 	
 	Model gameworld;
 	
-	private float zoom = 0.5f;
+	private int viewWidth;
+	private int viewHeight;
+	private float zoom; // set default in Model.java
+	
+	private float cameraX;
+	private float cameraY;
 	 
-	public Viewer(Model World) {
+	public Viewer(Model World, int _viewWidth, int _viewHeight) {
 		this.gameworld=World;
+		this.viewWidth = _viewWidth;
+		this.viewHeight = _viewHeight;
+		this.cameraX = viewWidth / 2;
+		this.cameraY = viewHeight / 2;
 	}
 
 	public void updateview() {
@@ -65,7 +74,7 @@ public class Viewer extends JPanel {
 		super.paintComponent(g);
 		CurrentAnimationTime++; // runs animation time step
 		
-		updateZoom();
+		updateCamera();
 		
 		int scale = 2;
 		
@@ -98,10 +107,11 @@ public class Viewer extends JPanel {
 	    }); 
 	}
 	
-	public void updateZoom()
+	public void updateCamera()
 	{
 		zoom = gameworld.getZoom();
-		System.out.println(zoom);
+		cameraX = gameworld.getCameraX();
+		cameraY = gameworld.getCameraY();
 	}
 	
 	private void drawEnemies(int x, int y, int width, int height, String texture, Graphics g) {
@@ -135,7 +145,11 @@ public class Viewer extends JPanel {
 			{
 				for (int x = 0; x < tiles[y].length; x++) 
 				{
-					g.drawImage(textureAtlas, Math.round((x * tileSize) * zoom), Math.round((y * tileSize) * zoom), Math.round((x * tileSize + tileSize) * zoom), Math.round((y * tileSize + tileSize) * zoom), tiles[y][x] * tileSize, 0, tiles[y][x] * tileSize + tileSize, tileSize, null);
+					// only draw tiles in view
+					if ( Math.round(((x + 1) * tileSize) * zoom) >= cameraX - viewWidth / 2 && Math.round(((x - 1) * tileSize) * zoom) <= cameraX + viewWidth / 2 && Math.round(((y - 1) * tileSize) * zoom) >= cameraY - viewHeight / 2 && Math.round(((y + 1) * tileSize) * zoom) <= cameraY + viewWidth / 2)
+					{
+						g.drawImage(textureAtlas, Math.round((x * tileSize) * zoom), Math.round((y * tileSize) * zoom), Math.round((x * tileSize + tileSize) * zoom), Math.round((y * tileSize + tileSize) * zoom), tiles[y][x] * tileSize, 0, tiles[y][x] * tileSize + tileSize, tileSize, null);
+					}
 				}
 			} 
 			

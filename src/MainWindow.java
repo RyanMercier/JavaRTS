@@ -45,16 +45,19 @@ SOFTWARE.
 
 
 public class MainWindow {
-	 private static  JFrame frame = new JFrame("Game");   // Change to the name of your game 
-	 private static   Model gameworld= new Model();
-	 private static   Viewer canvas = new  Viewer( gameworld);
-	 private Controller controller =new Controller()  ; 
-	 private static   int TargetFPS = 100;
-	 private static boolean startGame= false; 
-	 private   JLabel BackgroundImageForStartMenu ;
+	private static int frameWidth = 1000;
+	private static int frameHeight = 1000;
+	
+	private static  JFrame frame = new JFrame("Zombie RTS");
+	private static   Model gameworld= new Model();
+	private static   Viewer canvas = new  Viewer( gameworld, frameHeight, frameWidth);
+	private Controller controller =new Controller()  ; 
+	private static   int TargetFPS = 100;
+	private static boolean startGame= false; 
+	private   JLabel BackgroundImageForStartMenu ;
 	  
 	public MainWindow() {
-		frame.setSize(1000, 1000);  // you can customise this later and adapt it to change on size.  
+		frame.setSize(frameWidth, frameHeight);  
 	    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);   //If exit // you can modify with your way of quitting , just is a template.
 	    frame.setLayout(null);
 	    frame.add(canvas);  
@@ -82,7 +85,7 @@ public class MainWindow {
 			try {
 				 BufferedImage myPicture = ImageIO.read(BackroundToLoad);
 				 BackgroundImageForStartMenu = new JLabel(new ImageIcon(myPicture));
-				 BackgroundImageForStartMenu.setBounds(0, 0, 1000, 1000);
+				 BackgroundImageForStartMenu.setBounds(0, 0, frameWidth, frameHeight);
 				frame.add(BackgroundImageForStartMenu); 
 			}  catch (IOException e) { 
 				e.printStackTrace();

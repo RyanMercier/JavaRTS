@@ -42,7 +42,8 @@ public class Model {
 	private String worldFilePath = "res/world.txt";
 	private int[][] tiles = new int[50][50];
 	private int tileSize = 32;
-	private float zoom = 0.3f;
+	private float zoom = 2f;
+	private GameObject camera = new GameObject();
 	
 	private  Ship player;
 	private  CopyOnWriteArrayList<GameObject> EnemiesList  = new CopyOnWriteArrayList<GameObject>();
@@ -54,6 +55,8 @@ public class Model {
 	{
 		// setup game world
 		LoadWorld(worldFilePath);
+		
+		camera.setCentre(new Point3f(500, 500, 0));
 		
 		//Player 
 		player= new Ship("res/pirateship.png", 16, 16, new Point3f(500,500,0), 1);
@@ -75,7 +78,17 @@ public class Model {
 	
 	public void changeZoom(float amount) 
 	{
-		zoom += amount * 0.01f;
+		zoom += amount * 0.02f;
+	}
+	
+	public float getCameraX()
+	{
+		return camera.getCentre().getX();
+	}
+	
+	public float getCameraY()
+	{
+		return camera.getCentre().getY();
 	}
 	
 	private void LoadWorld(String fileName)
@@ -124,6 +137,27 @@ public class Model {
 	private void windowLogic()
 	{
 		changeZoom(Controller.getInstance().getNotches());
+		
+		// handle camera movement;
+		if(Controller.getInstance().isKeyAPressed())
+		{
+			camera.getCentre().ApplyVector( new Vector3f(-2,0,0));
+		}
+		
+		if(Controller.getInstance().isKeyDPressed())
+		{
+			camera.getCentre().ApplyVector( new Vector3f(2,0,0));
+		}
+			
+		if(Controller.getInstance().isKeyWPressed())
+		{
+			camera.getCentre().ApplyVector( new Vector3f(0,2,0));
+		}
+		
+		if(Controller.getInstance().isKeySPressed())
+		{
+			camera.getCentre().ApplyVector( new Vector3f(0,-2,0));
+		}
 	}
 
 	private void gameLogic() { 
