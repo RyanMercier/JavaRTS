@@ -3,6 +3,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.LayoutManager;
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.TexturePaint;
 import java.awt.image.BufferedImage;
@@ -54,18 +55,41 @@ public class Viewer extends JPanel {
 	
 	private float cameraX;
 	private float cameraY;
-	 
+	
+	int tiles[][];
+	int tileSize;
+	Image textureAtlas;
+	
 	public Viewer(Model World, int _viewWidth, int _viewHeight) {
 		this.gameworld=World;
 		this.viewWidth = _viewWidth;
 		this.viewHeight = _viewHeight;
 		this.cameraX = viewWidth / 2;
 		this.cameraY = viewHeight / 2;
+		
+		tiles = gameworld.GetWorldTiles();
+		tileSize = gameworld.getTileSize();
+		
+		File AtlasFile = new File("res/tilemap.png"); 
+		try {
+			textureAtlas = ImageIO.read(AtlasFile);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	public void updateview() {
 		
 		this.repaint();
+	}
+	
+	public Point globalToScreenCoords(float _x, float _y)
+	{
+		
+		float offsetX = (_x - cameraX);
+		float offsetY = (_y - cameraY);
+		return new Point(Math.round(viewWidth / 2 + offsetX * zoom), Math.round(viewHeight / 2 + offsetY * zoom));
 	}
 	
 	
@@ -133,29 +157,17 @@ public class Viewer extends JPanel {
 	private void drawViewPortBackground(Graphics g)
 	{
 		// draw tile map
+		int tilesX = (int)(viewWidth / (tileSize * zoom));
+		int tilesY = (int)(viewHeight / (tileSize * zoom));
 		
-		int tiles[][] = gameworld.GetWorldTiles();
-		int tileSize = gameworld.getTileSize();
-		
-		File AtlasFile = new File("res/tilemap.png"); 
-		try {
-			Image textureAtlas = ImageIO.read(AtlasFile); 
-			
-			for (int y = 0; y < tiles.length; y++)
+		for (int y = 0; y <= tilesY + 1; y++)
+		{
+			for (int x = 0; x <= tilesX + 1; x++) 
 			{
-				for (int x = 0; x < tiles[y].length; x++) 
-				{
-					// only draw tiles in view
-					if ( Math.round(((x + 1) * tileSize) * zoom) >= cameraX - viewWidth / 2 && Math.round(((x - 1) * tileSize) * zoom) <= cameraX + viewWidth / 2 && Math.round(((y - 1) * tileSize) * zoom) >= cameraY - viewHeight / 2 && Math.round(((y + 1) * tileSize) * zoom) <= cameraY + viewWidth / 2)
-					{
-						g.drawImage(textureAtlas, Math.round((x * tileSize) * zoom), Math.round((y * tileSize) * zoom), Math.round((x * tileSize + tileSize) * zoom), Math.round((y * tileSize + tileSize) * zoom), tiles[y][x] * tileSize, 0, tiles[y][x] * tileSize + tileSize, tileSize, null);
-					}
-				}
-			} 
-			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+				// only draw tiles in view
+				Point pos = globalToScreenCoords(cameraX + (x - (tilesX / 2) - 1) * tileSize, cameraY + (y - (tilesY / 2) - 1) * tileSize);
+				g.drawImage(textureAtlas, pos.x, pos.y, Math.round(pos.x + tileSize * zoom), Math.round(pos.y + tileSize * zoom), tiles[(int)(cameraY / tileSize) + y - tilesY / 2 - 1][(int)(cameraX / tileSize) + x - tilesX / 2 - 1] * tileSize, 0, tiles[(int)(cameraY / tileSize) + y - tilesY / 2 - 1][(int)(cameraX / tileSize) + x - tilesX / 2 - 1] * tileSize + tileSize, tileSize, null);
+			}
 		}
 	}
 	
@@ -180,8 +192,9 @@ public class Viewer extends JPanel {
 			Image myImage = ImageIO.read(TextureToLoad);
 			//The sprite is 32x32 pixel wide and 4 of them are placed together so we need to grab a different one each time 
 			//remember your training :-) computer science everything starts at 0 so 32 pixels gets us to 31  
-			int currentPositionInAnimation= ((int) ((CurrentAnimationTime% (10 * frames))/10))*width; //slows down animation so every 10 frames we get another frame so every 100ms 
-			g.drawImage(myImage, x,y, x+width*scale, y+height*scale, currentPositionInAnimation  , 0, currentPositionInAnimation+width-1, height, null); 
+			int currentPositionInAnimation= ((int) ((CurrentAnimationTime% (10 * frames))/10))*width; //slows down animation so every 10 frames we get another frame so every 100ms
+			Point pos = globalToScreenCoords(x, y);
+			g.drawImage(myImage, pos.x, pos.y, Math.round(pos.x + width * scale * zoom), Math.round(pos.y + height * scale * zoom), currentPositionInAnimation  , 0, currentPositionInAnimation+width-1, height, null); 
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

@@ -40,7 +40,7 @@ public class Model {
 	 
 	private Controller controller = Controller.getInstance();
 	private String worldFilePath = "res/world.txt";
-	private int[][] tiles = new int[50][50];
+	private int[][] tiles = new int[100][100];
 	private int tileSize = 32;
 	private float zoom = 2f;
 	private GameObject camera = new GameObject();
@@ -122,7 +122,7 @@ public class Model {
 	public void logic() 
 	{
 		// Player Logic first 
-		playerLogic(); 
+		//playerLogic(); 
 		// Enemy Logic next
 		enemyLogic();
 		// Bullets move next 
@@ -141,22 +141,22 @@ public class Model {
 		// handle camera movement;
 		if(Controller.getInstance().isKeyAPressed())
 		{
-			camera.getCentre().ApplyVector( new Vector3f(-2,0,0));
+			camera.getCentre().ApplyVector( new Vector3f(-1,0,0));
 		}
 		
 		if(Controller.getInstance().isKeyDPressed())
 		{
-			camera.getCentre().ApplyVector( new Vector3f(2,0,0));
+			camera.getCentre().ApplyVector( new Vector3f(1,0,0));
 		}
 			
 		if(Controller.getInstance().isKeyWPressed())
 		{
-			camera.getCentre().ApplyVector( new Vector3f(0,2,0));
+			camera.getCentre().ApplyVector( new Vector3f(0,1,0));
 		}
 		
 		if(Controller.getInstance().isKeySPressed())
 		{
-			camera.getCentre().ApplyVector( new Vector3f(0,-2,0));
+			camera.getCentre().ApplyVector( new Vector3f(0,-1,0));
 		}
 	}
 
@@ -238,19 +238,19 @@ public class Model {
 		 
 		//check for movement and if you fired a bullet 
 		  
-		if(Controller.getInstance().isKeyAPressed()){player.getGameObject().getCentre().ApplyVector( new Vector3f(-2,0,0)); }
+		if(Controller.getInstance().isKeyAPressed()){player.getGameObject().getCentre().ApplyVector( new Vector3f(-1,0,0)); }
 		
 		if(Controller.getInstance().isKeyDPressed())
 		{
-			player.getGameObject().getCentre().ApplyVector( new Vector3f(2,0,0));
+			player.getGameObject().getCentre().ApplyVector( new Vector3f(1,0,0));
 		}
 			
 		if(Controller.getInstance().isKeyWPressed())
 		{
-			player.getGameObject().getCentre().ApplyVector( new Vector3f(0,2,0));
+			player.getGameObject().getCentre().ApplyVector( new Vector3f(0,1,0));
 		}
 		
-		if(Controller.getInstance().isKeySPressed()){player.getGameObject().getCentre().ApplyVector( new Vector3f(0,-2,0));}
+		if(Controller.getInstance().isKeySPressed()){player.getGameObject().getCentre().ApplyVector( new Vector3f(0,-1,0));}
 		
 		if(Controller.getInstance().isKeySpacePressed())
 		{
