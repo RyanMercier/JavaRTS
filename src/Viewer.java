@@ -176,11 +176,14 @@ public class Viewer extends JPanel
 					continue; // skip tiles outside the map
 				}
 
-				int tileX = (int)(cameraX / tileSize);
-				int tileY = (int)(cameraY / tileSize);
+				int tileX = (int)(cameraX / tileSize + x - tilesX / 2 - 1);
+				int tileY = (int)(cameraY / tileSize + y - tilesY / 2 - 1);
 
-				Point pos = globalToScreenCoords(camOffsetX + (x - (tilesX / 2) - 1) * tileSize, camOffsetY + (y - (tilesY / 2) - 1) * tileSize);
-				g.drawImage(textureAtlas, pos.x, pos.y, (int)(pos.x + tileSize * zoom), (int)(pos.y + tileSize * zoom), tiles[tileY + y - tilesY / 2 - 1][tileX + x - tilesX / 2 - 1] * tileSize, 0, tiles[tileY + y - tilesY / 2 - 1][tileX + x - tilesX / 2 - 1] * tileSize + tileSize, tileSize, null);
+				if (tileX >= 0 && tileX < tiles[0].length && tileY >= 0 && tileY < tiles.length)
+				{
+					Point pos = globalToScreenCoords(camOffsetX + (x - (tilesX / 2) - 1) * tileSize, camOffsetY + (y - (tilesY / 2) - 1) * tileSize);
+					g.drawImage(textureAtlas, pos.x, pos.y, (int)(pos.x + tileSize * zoom), (int)(pos.y + tileSize * zoom), tiles[tileY][tileX] * tileSize, 0, tiles[tileY][tileX] * tileSize + tileSize, tileSize, null);
+				}
 			}
 		}
 	}
@@ -231,8 +234,6 @@ public class Viewer extends JPanel
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
-		// g.drawImage(img, dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, observer));
 
 	}
 
