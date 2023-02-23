@@ -1,3 +1,4 @@
+import java.awt.Point;
 import java.io.File;
 import java.io.IOException;
 import java.util.Scanner;
@@ -47,6 +48,9 @@ public class Model
 	private float zoom = 2f;
 	private GameObject camera = new GameObject();
 	private float cameraSpeed = 1f;
+
+	private Point mousePos1;
+	private Point mousePos2;
 
 	private Ship player;
 	private CopyOnWriteArrayList<GameObject> EnemiesList = new CopyOnWriteArrayList<GameObject>();
@@ -124,6 +128,16 @@ public class Model
 		return camera.getCentre().getY();
 	}
 
+	public Point globalToScreenCoords(float _x, float _y)
+	{
+		return new Point((int)(viewWidth / 2 + (_x - getCameraX()) * zoom), (int)(viewHeight / 2 + (_y - getCameraY()) * zoom));
+	}
+
+	public Point screenToGlobalCoords(Point p)
+	{
+		return new Point((int)((p.getX() - viewWidth / 2) / zoom + getCameraX()), (int)((p.getY() - viewHeight / 2) / zoom + getCameraY()));
+	}
+
 	private void LoadWorld(String fileName)
 	{
 		// this loads the map from a text file and puts it into a 2d array containing
@@ -147,6 +161,8 @@ public class Model
 				System.out.println();
 			}
 
+			scanner.close();
+
 		} catch (IOException e)
 		{
 			e.printStackTrace();
@@ -157,6 +173,8 @@ public class Model
 	// ,decides the outcomes and then changes the model accordingly.
 	public void logic()
 	{
+		// user interaction first
+		userLogic();
 		// Player Logic first
 		// playerLogic();
 		// Enemy Logic next
@@ -214,13 +232,36 @@ public class Model
 		}
 	}
 
+	private void userLogic()
+	{
+		// handle right mouse drag select
+		boolean rightMousePressed = controller.isRightMousePressed();
+		boolean rightMouseReleased = controller.isRightMouseReleased();
+
+		if (rightMousePressed)
+		{
+			mousePos1 = controller.getMousePosition();
+		}
+
+		else if (rightMouseReleased)
+		{
+			mousePos2 = controller.getMousePosition();
+			controller.setRightMouseReleased(false);
+
+			Point worldPos1 = screenToGlobalCoords(mousePos1);
+			Point worldPos2 = screenToGlobalCoords(mousePos2);
+
+			tiles[(int)(worldPos1.getY() / tileSize)][(int)(worldPos1.getX() / tileSize)] = 0;
+			tiles[(int)(worldPos2.getY() / tileSize)][(int)(worldPos2.getX() / tileSize)] = 0;
+		}
+	}
+
 	private void gameLogic()
 	{
 
 		// this is a way to increment across the array list data structure
 
 		// see if they hit anything
-		// using enhanced for-loop style as it makes it alot easier both code wise and
 		// reading wise too
 		for (GameObject temp : EnemiesList)
 		{
@@ -282,42 +323,6 @@ public class Model
 			{
 				BulletList.remove(temp);
 			}
-		}
-
-	}
-
-	private void playerLogic()
-	{
-
-		// smoother animation is possible if we make a target position // done but may
-		// try to change things for students
-
-		// check for movement and if you fired a bullet
-
-		if (Controller.getInstance().isKeyAPressed())
-		{
-			player.getGameObject().getCentre().ApplyVector(new Vector3f(-1, 0, 0));
-		}
-
-		if (Controller.getInstance().isKeyDPressed())
-		{
-			player.getGameObject().getCentre().ApplyVector(new Vector3f(1, 0, 0));
-		}
-
-		if (Controller.getInstance().isKeyWPressed())
-		{
-			player.getGameObject().getCentre().ApplyVector(new Vector3f(0, 1, 0));
-		}
-
-		if (Controller.getInstance().isKeySPressed())
-		{
-			player.getGameObject().getCentre().ApplyVector(new Vector3f(0, -1, 0));
-		}
-
-		if (Controller.getInstance().isKeySpacePressed())
-		{
-			CreateBullet();
-			Controller.getInstance().setKeySpacePressed(false);
 		}
 
 	}

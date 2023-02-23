@@ -72,6 +72,8 @@ public class MainWindow
 				BackgroundImageForStartMenu.setVisible(false);
 				canvas.setVisible(true);
 				canvas.addKeyListener(controller); // adding the controller to the Canvas for key input
+				canvas.addMouseListener(controller); // adding controller to the canvas for mouse click input
+				canvas.addMouseMotionListener(controller); // adding controller to the canvas for mouse movement detection
 				canvas.addMouseWheelListener(controller); // adding the controller to the Canvas for mouse wheel input
 				canvas.requestFocusInWindow(); // making sure that the Canvas is in focus so keyboard input will be taking in .
 				startGame = true;
