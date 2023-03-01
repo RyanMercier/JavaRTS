@@ -1,6 +1,10 @@
 import java.awt.Point;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Scanner;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -41,7 +45,7 @@ public class Model
 	private int worldHeight = 100;
 	private int viewWidth;
 	private int viewHeight;
-	private int[][] tiles = new int[worldHeight][worldWidth];
+	private tile[][] tiles = new tile[worldHeight][worldWidth];
 	private int tileSize = 32;
 
 	private final float minZoom = 0.5f;
@@ -52,9 +56,10 @@ public class Model
 	private Point mousePos1;
 	private Point mousePos2;
 
-	private Ship player;
-	private CopyOnWriteArrayList<GameObject> EnemiesList = new CopyOnWriteArrayList<GameObject>();
-	private CopyOnWriteArrayList<GameObject> BulletList = new CopyOnWriteArrayList<GameObject>();
+	private int idCount = 0;
+	private CopyOnWriteArrayList<Unit> zombiesList = new CopyOnWriteArrayList<Unit>();
+	private CopyOnWriteArrayList<Unit> enemiesList = new CopyOnWriteArrayList<Unit>();
+	ArrayList<Unit> selected;
 
 	private int Score = 0;
 
@@ -67,14 +72,17 @@ public class Model
 		viewWidth = frameWidth;
 		viewHeight = frameHeight;
 
-		// Player
-		player = new Ship("res/pirateship.png", 16, 16, new Point3f(500, 500, 0), 1);
-		// Enemies starting with four
+		//
+		for (int i = 0; i < 100; i++)
+		{
+			zombiesList.add(new Unit(idCount++, "res/pirateship.png", 16, 16, new Point3f(getRandomInt(1, 2000), getRandomInt(1, 2000), 0), tileSize, 1));
+		}
 
-		EnemiesList.add(new GameObject("res/UFO.png", 50, 50, new Point3f(((float)Math.random() * 50 + 400), 0, 0)));
-		EnemiesList.add(new GameObject("res/UFO.png", 50, 50, new Point3f(((float)Math.random() * 50 + 500), 0, 0)));
-		EnemiesList.add(new GameObject("res/UFO.png", 50, 50, new Point3f(((float)Math.random() * 100 + 500), 0, 0)));
-		EnemiesList.add(new GameObject("res/UFO.png", 50, 50, new Point3f(((float)Math.random() * 100 + 400), 0, 0)));
+		// Enemies starting with four
+		enemiesList.add(new Unit(idCount++, "res/UFO.png", 50, 50, new Point3f(((float)Math.random() * 50 + 400), 0, 0), tileSize, 1));
+		enemiesList.add(new Unit(idCount++, "res/UFO.png", 50, 50, new Point3f(((float)Math.random() * 50 + 500), 0, 0), tileSize, 1));
+		enemiesList.add(new Unit(idCount++, "res/UFO.png", 50, 50, new Point3f(((float)Math.random() * 100 + 500), 0, 0), tileSize, 1));
+		enemiesList.add(new Unit(idCount++, "res/UFO.png", 50, 50, new Point3f(((float)Math.random() * 100 + 400), 0, 0), tileSize, 1));
 
 	}
 
@@ -92,17 +100,17 @@ public class Model
 		}
 
 		float zoomedSize = tileSize * zoom;
-		int leftBound = (int)(camera.getCentre().getX() / tileSize - viewWidth / zoomedSize / 2);
-		int rightBound = (int)(leftBound + viewWidth / zoomedSize);
-		int upperBound = (int)(camera.getCentre().getY() / tileSize - viewHeight / zoomedSize / 2);
-		int lowerBound = (int)(upperBound + viewHeight / zoomedSize);
+		float leftBound = camera.getCentre().getX() / tileSize - viewWidth / zoomedSize / 2;
+		float rightBound = leftBound + viewWidth / zoomedSize;
+		float upperBound = camera.getCentre().getY() / tileSize - viewHeight / zoomedSize / 2;
+		float lowerBound = upperBound + viewHeight / zoomedSize;
 
 		if (leftBound < 0)
 		{
 			camera.setCentre(new Point3f(camera.getCentre().getX() + viewWidth / zoomedSize / 2, camera.getCentre().getY(), 0));
 		}
 
-		if (rightBound >= tiles[0].length)
+		if (rightBound > tiles[0].length)
 		{
 			camera.setCentre(new Point3f(camera.getCentre().getX() - viewWidth / zoomedSize / 2, camera.getCentre().getY(), 0));
 		}
@@ -112,10 +120,15 @@ public class Model
 			camera.setCentre(new Point3f(camera.getCentre().getX(), camera.getCentre().getY() + viewHeight / zoomedSize / 2, 0));
 		}
 
-		if (lowerBound >= tiles.length)
+		if (lowerBound > tiles.length)
 		{
 			camera.setCentre(new Point3f(camera.getCentre().getX(), camera.getCentre().getY() - viewHeight / zoomedSize / 2, 0));
 		}
+	}
+
+	public int getRandomInt(int min, int max)
+	{
+		return (int)((Math.random() * (max - min)) + min);
 	}
 
 	public float getCameraX()
@@ -138,6 +151,29 @@ public class Model
 		return new Point((int)((p.getX() - viewWidth / 2) / zoom + getCameraX()), (int)((p.getY() - viewHeight / 2) / zoom + getCameraY()));
 	}
 
+	public ArrayList<Unit> getUnitsInArea(Point p1, Point p2)
+	{
+		ArrayList<Unit> result = new ArrayList<Unit>();
+
+		int x1 = Math.min(p1.x, p2.x);
+		int x2 = Math.max(p1.x, p2.x);
+		int y1 = Math.min(p1.y, p2.y);
+		int y2 = Math.max(p1.y, p2.y);
+
+		for (Unit zombie : zombiesList)
+		{
+			float zombieX = zombie.getGameObject().getCentre().getX();
+			float zombieY = zombie.getGameObject().getCentre().getY();
+
+			if (zombieX >= x1 && zombieX <= x2 && zombieY >= y1 && zombieY <= y2)
+			{
+				result.add(zombie);
+			}
+		}
+
+		return result;
+	}
+
 	private void LoadWorld(String fileName)
 	{
 		// this loads the map from a text file and puts it into a 2d array containing
@@ -153,12 +189,12 @@ public class Model
 				char[] worldRow = scanner.nextLine().toCharArray();
 				for (int i = 0; i < worldRow.length; i++)
 				{
-					tiles[row][i] = (int)(worldRow[i] - '0');
-					System.out.print(tiles[row][i]);
+					tiles[row][i] = new tile(row, i, (int)(worldRow[i] - '0'));
+					// System.out.print(tiles[row][i].textureIndex);
 				}
 
 				row++;
-				System.out.println();
+				// System.out.println();
 			}
 
 			scanner.close();
@@ -167,6 +203,20 @@ public class Model
 		{
 			e.printStackTrace();
 		}
+
+//		Vector2D[][] flow = generateFlowField(tiles[2][2]);
+//
+//
+//		for (int y = 0; y < 20; y++)
+//		{
+//			for (int x = 0; x < 20; x++)
+//			{
+//				System.out.print(flow[y][x].x + ", " + flow[y][x].y + " | ");
+//			}
+//
+//			System.out.println();
+//		}
+
 	}
 
 	// This is the heart of the game , where the model takes in all the inputs
@@ -175,12 +225,10 @@ public class Model
 	{
 		// user interaction first
 		userLogic();
-		// Player Logic first
-		// playerLogic();
+		// Player Logic next
+		zombieLogic();
 		// Enemy Logic next
 		enemyLogic();
-		// Bullets move next
-		bulletLogic();
 		// interactions between objects
 		gameLogic();
 		// window input and logic
@@ -193,15 +241,15 @@ public class Model
 		changeZoom(Controller.getInstance().getNotches());
 
 		float zoomedSize = tileSize * zoom;
-		int leftBound = (int)(camera.getCentre().getX() / tileSize - viewWidth / zoomedSize / 2);
-		int rightBound = (int)(leftBound + viewWidth / zoomedSize);
-		int upperBound = (int)(camera.getCentre().getY() / tileSize - viewHeight / zoomedSize / 2);
-		int lowerBound = (int)(upperBound + viewHeight / zoomedSize);
+		float leftBound = camera.getCentre().getX() / tileSize - viewWidth / zoomedSize / 2;
+		float rightBound = leftBound + viewWidth / zoomedSize;
+		float upperBound = camera.getCentre().getY() / tileSize - viewHeight / zoomedSize / 2;
+		float lowerBound = upperBound + viewHeight / zoomedSize;
 
 		// handle camera movement;
 		if (Controller.getInstance().isKeyAPressed())
 		{
-			if (leftBound > 0)
+			if ((int)leftBound > 0)
 			{
 				camera.getCentre().ApplyVector(new Vector3f(-cameraSpeed * (1 + 1 / zoom / 2), 0, 0));
 			}
@@ -217,7 +265,7 @@ public class Model
 
 		if (Controller.getInstance().isKeyWPressed())
 		{
-			if (upperBound > 0)
+			if ((int)upperBound > 0)
 			{
 				camera.getCentre().ApplyVector(new Vector3f(0, cameraSpeed * (1 + 1 / zoom / 2), 0));
 			}
@@ -251,8 +299,15 @@ public class Model
 			Point worldPos1 = screenToGlobalCoords(mousePos1);
 			Point worldPos2 = screenToGlobalCoords(mousePos2);
 
-			tiles[(int)(worldPos1.getY() / tileSize)][(int)(worldPos1.getX() / tileSize)] = 0;
-			tiles[(int)(worldPos2.getY() / tileSize)][(int)(worldPos2.getX() / tileSize)] = 0;
+			selected = getUnitsInArea(worldPos1, worldPos2);
+
+			Vector2D[][] flow = generateFlowField(tiles[2][2]);
+
+			for (Unit zombie : selected)
+			{
+				System.out.println(zombie.getId());
+				zombie.assignFlowField(flow);
+			}
 		}
 	}
 
@@ -263,77 +318,35 @@ public class Model
 
 		// see if they hit anything
 		// reading wise too
-		for (GameObject temp : EnemiesList)
+		for (Unit zombie : zombiesList)
 		{
-			for (GameObject Bullet : BulletList)
+			for (Unit enemy : enemiesList)
 			{
-				if (Math.abs(temp.getCentre().getX() - Bullet.getCentre().getX()) < temp.getWidth() && Math.abs(temp.getCentre().getY() - Bullet.getCentre().getY()) < temp.getHeight())
-				{
-					EnemiesList.remove(temp);
-					BulletList.remove(Bullet);
-					Score++;
-				}
+
 			}
 		}
 
+	}
+
+	private void zombieLogic()
+	{
+		// TODO Auto-generated method stub
+		for (Unit zombie : zombiesList)
+		{
+			zombie.Update();
+		}
 	}
 
 	private void enemyLogic()
 	{
 		// TODO Auto-generated method stub
-		for (GameObject temp : EnemiesList)
+		for (Unit enemy : enemiesList)
 		{
-			// Move enemies
 
-			temp.getCentre().ApplyVector(new Vector3f(0, -1, 0));
-
-			// see if they get to the top of the screen ( remember 0 is the top
-			if (temp.getCentre().getY() == 900.0f) // current boundary need to pass value to model
-			{
-				EnemiesList.remove(temp);
-
-				// enemies win so score decreased
-				Score--;
-			}
-		}
-
-		if (EnemiesList.size() < 2)
-		{
-			while (EnemiesList.size() < 6)
-			{
-				EnemiesList.add(new GameObject("res/UFO.png", 50, 50, new Point3f(((float)Math.random() * 1000), 0, 0)));
-			}
 		}
 	}
 
-	private void bulletLogic()
-	{
-		// TODO Auto-generated method stub
-		// move bullets
-
-		for (GameObject temp : BulletList)
-		{
-			// check to move them
-
-			temp.getCentre().ApplyVector(new Vector3f(0, 1, 0));
-			// see if they hit anything
-
-			// see if they get to the top of the screen ( remember 0 is the top
-			if (temp.getCentre().getY() == 0)
-			{
-				BulletList.remove(temp);
-			}
-		}
-
-	}
-
-	private void CreateBullet()
-	{
-		BulletList.add(new GameObject("res/Bullet.png", 32, 64, new Point3f(player.getGameObject().getCentre().getX(), player.getGameObject().getCentre().getY(), 0.0f)));
-
-	}
-
-	public int[][] GetWorldTiles()
+	public tile[][] GetWorldTiles()
 	{
 		return tiles;
 	}
@@ -343,19 +356,14 @@ public class Model
 		return tileSize;
 	}
 
-	public Ship getPlayer()
+	public CopyOnWriteArrayList<Unit> getZombies()
 	{
-		return player;
+		return zombiesList;
 	}
 
-	public CopyOnWriteArrayList<GameObject> getEnemies()
+	public CopyOnWriteArrayList<Unit> getEnemies()
 	{
-		return EnemiesList;
-	}
-
-	public CopyOnWriteArrayList<GameObject> getBullets()
-	{
-		return BulletList;
+		return enemiesList;
 	}
 
 	public int getScore()
@@ -363,4 +371,111 @@ public class Model
 		return Score;
 	}
 
+	public int[][] generateHeatMap(tile goalTile)
+	{
+		// use Djikstra's Algorithm
+
+		int[][] distances = new int[tiles.length][tiles[0].length];
+
+		for (int i = 0; i < distances.length; i++)
+		{
+			Arrays.fill(distances[i], Integer.MAX_VALUE);
+		}
+
+		distances[goalTile.y][goalTile.x] = 0;
+
+		Queue<tile> openList = new LinkedList<>();
+		openList.add(goalTile);
+
+		while (!openList.isEmpty())
+		{
+			tile selected = openList.remove();
+			int selectedDistance = distances[selected.y][selected.x];
+
+			ArrayList<tile> neighbors = new ArrayList<>();
+
+			// Check if neighbors within array bounds
+			for (int i = selected.y - 1; i <= selected.y + 1; i++)
+			{
+				for (int j = selected.x - 1; j <= selected.x + 1; j++)
+				{
+					// Skip current tile
+					if (i == selected.y && j == selected.x)
+					{
+						continue;
+					}
+
+					// Check if tile is within bounds
+					if (i >= 0 && i < tiles.length && j >= 0 && j < tiles[0].length)
+					{
+						// Tile is within bounds
+						// Add to neighbor list
+						neighbors.add(tiles[i][j]);
+					}
+				}
+			}
+
+			for (tile neighbor : neighbors)
+			{
+				int neighborDistance = distances[neighbor.y][neighbor.x];
+				if (neighbor.isNotWall() && selectedDistance + 1 < neighborDistance)
+				{
+					distances[neighbor.y][neighbor.x] = selectedDistance + 1;
+					openList.add(neighbor);
+				}
+			}
+		}
+
+		return distances;
+	}
+
+	public Vector2D[][] generateFlowField(tile goalTile)
+	{
+		int[][] heatMap = generateHeatMap(goalTile);
+
+		// compute vector field
+		Vector2D[][] vectorField = new Vector2D[heatMap.length][heatMap[0].length];
+
+		// iterate over heatMap and let the vector at a position be the sum of all
+		// f(neighborVector) with f being 1/x
+		for (int y = 0; y < vectorField.length; y++)
+		{
+
+			for (int x = 0; x < vectorField[0].length; x++)
+			{
+				Vector2D flow = new Vector2D(0, 0);
+
+				for (int i = y - 1; i <= y + 1; i++)
+				{
+					for (int j = x - 1; j <= x + 1; j++)
+					{
+						// Skip current tile
+						if (i == y && j == x)
+						{
+							continue;
+						}
+
+						// Check if neighbor tile is within bounds and heatMap value is not zero (to
+						// avoid divide by zero)
+						if (i >= 0 && i < vectorField.length && j >= 0 && j < vectorField[0].length && heatMap[i][j] != 0)
+						{
+							// if it is then we get the normalized cardinal direction vector and let its
+							// magnitude be f(heatMapDistance) with f being 1 / x
+							// we then add that to our resultant vector
+
+							Vector2D neighbor = new Vector2D(j - x, i - y);
+							neighbor.Normalize();
+							neighbor.Scale(1.0f / heatMap[i][j]);
+							flow.Add(neighbor);
+						}
+					}
+				}
+
+				flow.Normalize();
+				vectorField[y][x] = flow;
+			}
+		}
+
+		return vectorField;
+	}
 }

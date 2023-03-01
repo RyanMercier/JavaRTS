@@ -48,7 +48,7 @@ public class Viewer extends JPanel
 	private float cameraX;
 	private float cameraY;
 
-	int tiles[][];
+	tile tiles[][];
 	int tileSize;
 	Image textureAtlas;
 
@@ -98,29 +98,17 @@ public class Viewer extends JPanel
 
 		int scale = 2;
 
-		// Draw player Game Object
-		int x = (int)gameworld.getPlayer().getGameObject().getCentre().getX();
-		int y = (int)gameworld.getPlayer().getGameObject().getCentre().getY();
-		int width = (int)gameworld.getPlayer().getGameObject().getWidth();
-		int height = (int)gameworld.getPlayer().getGameObject().getHeight();
-		int frames = (int)gameworld.getPlayer().getFrames();
-		String texture = gameworld.getPlayer().getGameObject().getTexture();
-
 		// Draw background
 		drawViewPortBackground(g);
 
-		// Draw player
-		drawPlayer(x, y, width, height, scale, frames, texture, g);
-
-		// Draw Bullets
-		// change back
-		gameworld.getBullets().forEach((temp) -> {
-			drawBullet((int)temp.getCentre().getX(), (int)temp.getCentre().getY(), (int)temp.getWidth(), (int)temp.getHeight(), temp.getTexture(), g);
+		// Draw Zombies
+		gameworld.getZombies().forEach((temp) -> {
+			drawUnit((int)temp.getGameObject().getCentre().getX(), (int)temp.getGameObject().getCentre().getY(), (int)temp.getGameObject().getWidth(), (int)temp.getGameObject().getHeight(), scale, temp.getFrames(), temp.getGameObject().getTexture(), g);
 		});
 
 		// Draw Enemies
 		gameworld.getEnemies().forEach((temp) -> {
-			drawEnemies((int)temp.getCentre().getX(), (int)temp.getCentre().getY(), (int)temp.getWidth(), (int)temp.getHeight(), temp.getTexture(), g);
+			drawUnit((int)temp.getGameObject().getCentre().getX(), (int)temp.getGameObject().getCentre().getY(), (int)temp.getGameObject().getWidth(), (int)temp.getGameObject().getHeight(), scale, temp.getFrames(), temp.getGameObject().getTexture(), g);
 
 		});
 	}
@@ -132,30 +120,6 @@ public class Viewer extends JPanel
 		cameraY = gameworld.getCameraY();
 		tilesX = (int)(viewWidth / (tileSize * zoom));
 		tilesY = (int)(viewHeight / (tileSize * zoom));
-	}
-
-	private void drawEnemies(int x, int y, int width, int height, String texture, Graphics g)
-	{
-		File TextureToLoad = new File(texture); // should work okay on OSX and Linux but check if you have issues
-												// depending your eclipse install or if your running this without an IDE
-		try
-		{
-			Image myImage = ImageIO.read(TextureToLoad);
-			// The sprite is 32x32 pixel wide and 4 of them are placed together so we need
-			// to grab a different one each time
-			// remember your training :-) computer science everything starts at 0 so 32
-			// pixels gets us to 31
-			int currentPositionInAnimation = ((int)(CurrentAnimationTime % 4) * 32); // slows down animation so every
-																						// 10 frames we get another
-																						// frame so every 100ms
-			g.drawImage(myImage, x, y, x + width, y + height, currentPositionInAnimation, 0, currentPositionInAnimation + 31, 32, null);
-
-		} catch (IOException e)
-		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
 	}
 
 	private void drawViewPortBackground(Graphics g)
@@ -182,30 +146,13 @@ public class Viewer extends JPanel
 				if (tileX >= 0 && tileX < tiles[0].length && tileY >= 0 && tileY < tiles.length)
 				{
 					Point pos = globalToScreenCoords(camOffsetX + (x - (tilesX / 2) - 1) * tileSize, camOffsetY + (y - (tilesY / 2) - 1) * tileSize);
-					g.drawImage(textureAtlas, pos.x, pos.y, (int)(pos.x + tileSize * zoom), (int)(pos.y + tileSize * zoom), tiles[tileY][tileX] * tileSize, 0, tiles[tileY][tileX] * tileSize + tileSize, tileSize, null);
+					g.drawImage(textureAtlas, pos.x, pos.y, (int)(pos.x + tileSize * zoom), (int)(pos.y + tileSize * zoom), tiles[tileY][tileX].textureIndex * tileSize, 0, tiles[tileY][tileX].textureIndex * tileSize + tileSize, tileSize, null);
 				}
 			}
 		}
 	}
 
-	private void drawBullet(int x, int y, int width, int height, String texture, Graphics g)
-	{
-		File TextureToLoad = new File(texture); // should work okay on OSX and Linux but check if you have issues
-												// depending your eclipse install or if your running this without an IDE
-		try
-		{
-			Image myImage = ImageIO.read(TextureToLoad);
-			// 64 by 128
-			g.drawImage(myImage, x, y, x + width, y + height, 0, 0, 63, 127, null);
-
-		} catch (IOException e)
-		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
-	private void drawPlayer(int x, int y, int width, int height, int scale, int frames, String texture, Graphics g)
+	private void drawUnit(int x, int y, int width, int height, int scale, int frames, String texture, Graphics g)
 	{
 		File TextureToLoad = new File(texture); // should work okay on OSX and Linux but check if you have issues
 												// depending your eclipse install or if your running this without an IDE
@@ -216,16 +163,7 @@ public class Viewer extends JPanel
 			// to grab a different one each time
 			// remember your training :-) computer science everything starts at 0 so 32
 			// pixels gets us to 31
-			int currentPositionInAnimation = ((int)((CurrentAnimationTime % (10 * frames)) / 10)) * width; // slows
-																											// down
-																											// animation
-																											// so every
-																											// 10 frames
-																											// we get
-																											// another
-																											// frame so
-																											// every
-																											// 100ms
+			int currentPositionInAnimation = ((int)((CurrentAnimationTime % (10 * frames)) / 10)) * width; // slows down animation so every 10 frames we get another frame so every 100ms
 			Point pos = globalToScreenCoords(x, y);
 			g.drawImage(myImage, pos.x, pos.y, Math.round(pos.x + width * scale * zoom), Math.round(pos.y + height * scale * zoom), currentPositionInAnimation, 0, currentPositionInAnimation + width - 1, height, null);
 
