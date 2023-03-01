@@ -49,7 +49,7 @@ public class Model
 	private int tileSize = 32;
 
 	private final float minZoom = 0.5f;
-	private float zoom = 2f;
+	private float zoom = 0.5f;
 	private GameObject camera = new GameObject();
 	private float cameraSpeed = 1f;
 
@@ -73,16 +73,16 @@ public class Model
 		viewHeight = frameHeight;
 
 		//
-		for (int i = 0; i < 100; i++)
+		for (int i = 0; i < 1000; i++)
 		{
-			zombiesList.add(new Unit(idCount++, "res/pirateship.png", 16, 16, new Point3f(getRandomInt(1, 2000), getRandomInt(1, 2000), 0), tileSize, 1));
+			zombiesList.add(new Unit(idCount++, "res/pirateship.png", 16, 16, new Point3f(getRandomInt(100, 2500), getRandomInt(100, 2500), 0), tileSize, 1));
 		}
 
 		// Enemies starting with four
-		enemiesList.add(new Unit(idCount++, "res/UFO.png", 50, 50, new Point3f(((float)Math.random() * 50 + 400), 0, 0), tileSize, 1));
-		enemiesList.add(new Unit(idCount++, "res/UFO.png", 50, 50, new Point3f(((float)Math.random() * 50 + 500), 0, 0), tileSize, 1));
-		enemiesList.add(new Unit(idCount++, "res/UFO.png", 50, 50, new Point3f(((float)Math.random() * 100 + 500), 0, 0), tileSize, 1));
-		enemiesList.add(new Unit(idCount++, "res/UFO.png", 50, 50, new Point3f(((float)Math.random() * 100 + 400), 0, 0), tileSize, 1));
+//		enemiesList.add(new Unit(idCount++, "res/UFO.png", 50, 50, new Point3f(((float)Math.random() * 50 + 400), 0, 0), tileSize, 1));
+//		enemiesList.add(new Unit(idCount++, "res/UFO.png", 50, 50, new Point3f(((float)Math.random() * 50 + 500), 0, 0), tileSize, 1));
+//		enemiesList.add(new Unit(idCount++, "res/UFO.png", 50, 50, new Point3f(((float)Math.random() * 100 + 500), 0, 0), tileSize, 1));
+//		enemiesList.add(new Unit(idCount++, "res/UFO.png", 50, 50, new Point3f(((float)Math.random() * 100 + 400), 0, 0), tileSize, 1));
 
 	}
 
@@ -204,18 +204,17 @@ public class Model
 			e.printStackTrace();
 		}
 
-//		Vector2D[][] flow = generateFlowField(tiles[2][2]);
-//
-//
-//		for (int y = 0; y < 20; y++)
-//		{
-//			for (int x = 0; x < 20; x++)
-//			{
-//				System.out.print(flow[y][x].x + ", " + flow[y][x].y + " | ");
-//			}
-//
-//			System.out.println();
-//		}
+		Vector2D[][] flow = generateFlowField(tiles[2][2]);
+
+		for (int y = 0; y < flow.length; y++)
+		{
+			for (int x = 0; x < flow[0].length; x++)
+			{
+				System.out.print(flow[y][x].x + ", " + flow[y][x].y + " | ");
+			}
+
+			System.out.println();
+		}
 
 	}
 
@@ -225,11 +224,7 @@ public class Model
 	{
 		// user interaction first
 		userLogic();
-		// Player Logic next
-		zombieLogic();
-		// Enemy Logic next
-		enemyLogic();
-		// interactions between objects
+		// run game
 		gameLogic();
 		// window input and logic
 		windowLogic();
@@ -313,36 +308,9 @@ public class Model
 
 	private void gameLogic()
 	{
-
-		// this is a way to increment across the array list data structure
-
-		// see if they hit anything
-		// reading wise too
-		for (Unit zombie : zombiesList)
-		{
-			for (Unit enemy : enemiesList)
-			{
-
-			}
-		}
-
-	}
-
-	private void zombieLogic()
-	{
-		// TODO Auto-generated method stub
 		for (Unit zombie : zombiesList)
 		{
 			zombie.Update();
-		}
-	}
-
-	private void enemyLogic()
-	{
-		// TODO Auto-generated method stub
-		for (Unit enemy : enemiesList)
-		{
-
 		}
 	}
 
@@ -459,23 +427,61 @@ public class Model
 						// avoid divide by zero)
 						if (i >= 0 && i < vectorField.length && j >= 0 && j < vectorField[0].length && heatMap[i][j] != 0)
 						{
-							// if it is then we get the normalized cardinal direction vector and let its
-							// magnitude be f(heatMapDistance) with f being 1 / x
-							// we then add that to our resultant vector
-
-							Vector2D neighbor = new Vector2D(j - x, i - y);
-							neighbor.Normalize();
-							neighbor.Scale(1.0f / heatMap[i][j]);
-							flow.Add(neighbor);
+							// check if neighbor tile is not a wall
+							if (tiles[i][j].isNotWall())
+							{
+								// if it isn't then we get the normalized cardinal direction vector and let its
+								// magnitude be f(heatMapDistance) with f being 1 / x
+								// we then add that to our resultant vector
+								Vector2D neighbor = new Vector2D(j - x, i - y);
+								neighbor.Normalize();
+								neighbor.Scale(1.0f / heatMap[i][j]);
+								flow.Add(neighbor);
+							} else
+							{
+								// if it's a wall tile, add a vector pointing away from the wall to avoid it
+								Vector2D wallAvoidance = new Vector2D(x - j, y - i);
+								wallAvoidance.Normalize();
+								wallAvoidance.Scale(2.0f); // increase the magnitude for stronger avoidance
+								flow.Add(wallAvoidance);
+							}
 						}
 					}
 				}
 
 				flow.Normalize();
+				flow.y = -flow.y; // idk bruh it works
 				vectorField[y][x] = flow;
 			}
 		}
 
-		return vectorField;
+		// Smoothing
+		Vector2D[][] smoothedVectorField = new Vector2D[vectorField.length][vectorField[0].length];
+		for (int y = 0; y < vectorField.length; y++)
+		{
+
+			for (int x = 0; x < vectorField[0].length; x++)
+			{
+				Vector2D flow = new Vector2D(0, 0);
+
+				for (int i = y - 1; i <= y + 1; i++)
+				{
+					for (int j = x - 1; j <= x + 1; j++)
+					{
+						// Check if neighbor tile is within bounds and heatMap value is not zero (to
+						// avoid divide by zero)
+						if (i >= 0 && i < vectorField.length && j >= 0 && j < vectorField[0].length && heatMap[i][j] != 0)
+						{
+							flow.Add(vectorField[i][j]);
+						}
+					}
+				}
+
+				flow.Normalize();
+				smoothedVectorField[y][x] = flow;
+			}
+		}
+
+		return smoothedVectorField;
 	}
 }

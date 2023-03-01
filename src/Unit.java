@@ -11,6 +11,7 @@ public class Unit extends Entity
 
 	private int tileSize = 32;
 	private Vector2D[][] flowField;
+	private Vector2D movement = new Vector2D(0, 0);
 
 	public Unit(int _id, String _filepath, int _width, int _height, Point3f _position, int _tileSize, int _frames)
 	{
@@ -41,7 +42,21 @@ public class Unit extends Entity
 		if (flowField != null)
 		{
 			Point tilePos = currentTile();
-			gameObject.getCentre().ApplyVector(new Vector3f(flowField[tilePos.y][tilePos.x].x * speed, flowField[tilePos.y][tilePos.x].y * speed, 0));
+			if (tilePos.x >= 0 && tilePos.x < flowField[0].length && tilePos.y >= 0 && tilePos.y < flowField.length)
+			{
+				movement = new Vector2D(flowField[tilePos.y][tilePos.x].x * speed, flowField[tilePos.y][tilePos.x].y * speed);
+				Move();
+			}
 		}
+	}
+
+	public void Move()
+	{
+		gameObject.getCentre().ApplyVector(new Vector3f(movement.x, movement.y, 0));
+	}
+
+	public Vector2D getMovement()
+	{
+		return movement;
 	}
 }

@@ -3,6 +3,9 @@ import java.awt.Image;
 import java.awt.Point;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 import javax.swing.JPanel;
@@ -51,6 +54,7 @@ public class Viewer extends JPanel
 	tile tiles[][];
 	int tileSize;
 	Image textureAtlas;
+	private Map<String, Image> imageCache = new HashMap<>();
 
 	public Viewer(Model World, int _viewWidth, int _viewHeight)
 	{
@@ -90,27 +94,17 @@ public class Viewer extends JPanel
 
 	public void paintComponent(Graphics g)
 	{
-
 		super.paintComponent(g);
-		CurrentAnimationTime++; // runs animation time step
+		CurrentAnimationTime++;
 
 		updateCamera();
 
 		int scale = 2;
 
-		// Draw background
 		drawViewPortBackground(g);
 
-		// Draw Zombies
-		gameworld.getZombies().forEach((temp) -> {
-			drawUnit((int)temp.getGameObject().getCentre().getX(), (int)temp.getGameObject().getCentre().getY(), (int)temp.getGameObject().getWidth(), (int)temp.getGameObject().getHeight(), scale, temp.getFrames(), temp.getGameObject().getTexture(), g);
-		});
-
-		// Draw Enemies
-		gameworld.getEnemies().forEach((temp) -> {
-			drawUnit((int)temp.getGameObject().getCentre().getX(), (int)temp.getGameObject().getCentre().getY(), (int)temp.getGameObject().getWidth(), (int)temp.getGameObject().getHeight(), scale, temp.getFrames(), temp.getGameObject().getTexture(), g);
-
-		});
+		drawUnits(gameworld.getZombies(), g, scale);
+		// drawUnits(gameworld.getEnemies(), g, scale);
 	}
 
 	public void updateCamera()
@@ -152,27 +146,35 @@ public class Viewer extends JPanel
 		}
 	}
 
+	private void drawUnits(List<Unit> units, Graphics g, int scale)
+	{
+		for (Unit unit : units)
+		{
+			drawUnit((int)unit.getGameObject().getCentre().getX(), (int)unit.getGameObject().getCentre().getY(), (int)unit.getGameObject().getWidth(), (int)unit.getGameObject().getHeight(), scale, unit.getFrames(), unit.getGameObject().getTexture(), g);
+		}
+	}
+
 	private void drawUnit(int x, int y, int width, int height, int scale, int frames, String texture, Graphics g)
 	{
-		File TextureToLoad = new File(texture); // should work okay on OSX and Linux but check if you have issues
-												// depending your eclipse install or if your running this without an IDE
-		try
+		Image myImage = imageCache.get(texture);
+		if (myImage == null)
 		{
-			Image myImage = ImageIO.read(TextureToLoad);
-			// The sprite is 32x32 pixel wide and 4 of them are placed together so we need
-			// to grab a different one each time
-			// remember your training :-) computer science everything starts at 0 so 32
-			// pixels gets us to 31
-			int currentPositionInAnimation = ((int)((CurrentAnimationTime % (10 * frames)) / 10)) * width; // slows down animation so every 10 frames we get another frame so every 100ms
-			Point pos = globalToScreenCoords(x, y);
-			g.drawImage(myImage, pos.x, pos.y, Math.round(pos.x + width * scale * zoom), Math.round(pos.y + height * scale * zoom), currentPositionInAnimation, 0, currentPositionInAnimation + width - 1, height, null);
-
-		} catch (IOException e)
-		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			// Image not in cache, load it from disk
+			try
+			{
+				File textureFile = new File(texture);
+				myImage = ImageIO.read(textureFile);
+				imageCache.put(texture, myImage);
+			} catch (IOException e)
+			{
+				e.printStackTrace();
+				return; // Don't try to draw if image couldn't be loaded
+			}
 		}
 
+		int currentPositionInAnimation = ((int)((CurrentAnimationTime % (10 * frames)) / 10)) * width; // slows down animation so every 10 frames we get another frame so every 100ms
+		Point pos = globalToScreenCoords(x, y);
+		g.drawImage(myImage, pos.x, pos.y, Math.round(pos.x + width * scale * zoom), Math.round(pos.y + height * scale * zoom), currentPositionInAnimation, 0, currentPositionInAnimation + width - 1, height, null);
 	}
 
 }

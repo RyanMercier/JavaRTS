@@ -20,6 +20,11 @@ public class tile
 
 	public boolean isNotWall()
 	{
-		return true;
+		if (textureIndex == 0)
+		{
+			return true;
+		}
+
+		return false;
 	}
 }
