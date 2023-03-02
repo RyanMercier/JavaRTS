@@ -51,7 +51,7 @@ public class Viewer extends JPanel
 	private float cameraX;
 	private float cameraY;
 
-	tile tiles[][];
+	Tile tiles[][];
 	int tileSize;
 	Image textureAtlas;
 	private Map<String, Image> imageCache = new HashMap<>();

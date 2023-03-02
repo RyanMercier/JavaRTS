@@ -45,6 +45,7 @@ public class Controller implements KeyListener, MouseListener, MouseMotionListen
 	private static boolean KeySpacePressed = false;
 
 	private static int notches;
+	private static boolean leftMouseClicked = false;
 	private static boolean rightMousePressed = false;
 	private static boolean rightMouseReleased = false;
 	private static Point mousePosition = new Point(0, 0);
@@ -141,7 +142,11 @@ public class Controller implements KeyListener, MouseListener, MouseMotionListen
 	@Override
 	public void mouseClicked(MouseEvent e)
 	{
-
+		if (SwingUtilities.isLeftMouseButton(e))
+		{
+			leftMouseClicked = true;
+			mousePosition = e.getPoint();
+		}
 	}
 
 	@Override
@@ -261,5 +266,15 @@ public class Controller implements KeyListener, MouseListener, MouseMotionListen
 	public void setRightMouseReleased(boolean released)
 	{
 		rightMouseReleased = released;
+	}
+
+	public boolean isLeftMouseClicked()
+	{
+		return leftMouseClicked;
+	}
+
+	public void setLeftMouseReleased(boolean released)
+	{
+		leftMouseClicked = released;
 	}
 }

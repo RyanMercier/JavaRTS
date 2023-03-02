@@ -7,7 +7,7 @@ import util.Vector3f;
 public class Unit extends Entity
 {
 	private int health = 100;
-	float speed = 2;
+	float speed = 1.5f;
 
 	private int tileSize = 32;
 	private Vector2D[][] flowField;

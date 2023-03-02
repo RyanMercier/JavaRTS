@@ -45,7 +45,7 @@ public class Model
 	private int worldHeight = 100;
 	private int viewWidth;
 	private int viewHeight;
-	private tile[][] tiles = new tile[worldHeight][worldWidth];
+	private Tile[][] tiles = new Tile[worldHeight][worldWidth];
 	private int tileSize = 32;
 
 	private final float minZoom = 0.5f;
@@ -183,17 +183,17 @@ public class Model
 		{
 			Scanner scanner = new Scanner(worldFile);
 
-			int row = 0;
+			int y = 0;
 			while (scanner.hasNextLine())
 			{
 				char[] worldRow = scanner.nextLine().toCharArray();
-				for (int i = 0; i < worldRow.length; i++)
+				for (int x = 0; x < worldRow.length; x++)
 				{
-					tiles[row][i] = new tile(row, i, (int)(worldRow[i] - '0'));
+					tiles[y][x] = new Tile(x, y, (int)(worldRow[x] - '0'));
 					// System.out.print(tiles[row][i].textureIndex);
 				}
 
-				row++;
+				y++;
 				// System.out.println();
 			}
 
@@ -203,19 +203,11 @@ public class Model
 		{
 			e.printStackTrace();
 		}
+	}
 
-		Vector2D[][] flow = generateFlowField(tiles[2][2]);
-
-		for (int y = 0; y < flow.length; y++)
-		{
-			for (int x = 0; x < flow[0].length; x++)
-			{
-				System.out.print(flow[y][x].x + ", " + flow[y][x].y + " | ");
-			}
-
-			System.out.println();
-		}
-
+	public Tile getTileAt(Point p)
+	{
+		return tiles[(int)(p.getY() / tileSize)][(int)(p.getX() / tileSize)];
 	}
 
 	// This is the heart of the game , where the model takes in all the inputs
@@ -278,10 +270,30 @@ public class Model
 	private void userLogic()
 	{
 		// handle right mouse drag select
+		boolean leftMouseClicked = controller.isLeftMouseClicked();
 		boolean rightMousePressed = controller.isRightMousePressed();
 		boolean rightMouseReleased = controller.isRightMouseReleased();
 
-		if (rightMousePressed)
+		Vector2D[][] flow;
+
+		if (leftMouseClicked)
+		{
+			if (selected != null)
+			{
+				mousePos1 = controller.getMousePosition();
+				Tile target = getTileAt(screenToGlobalCoords(mousePos1));
+				flow = generateFlowField(target);
+
+				for (Unit zombie : zombiesList)
+				{
+					zombie.assignFlowField(flow);
+				}
+			}
+
+			controller.setLeftMouseReleased(false);
+		}
+
+		else if (rightMousePressed)
 		{
 			mousePos1 = controller.getMousePosition();
 		}
@@ -295,14 +307,6 @@ public class Model
 			Point worldPos2 = screenToGlobalCoords(mousePos2);
 
 			selected = getUnitsInArea(worldPos1, worldPos2);
-
-			Vector2D[][] flow = generateFlowField(tiles[2][2]);
-
-			for (Unit zombie : selected)
-			{
-				System.out.println(zombie.getId());
-				zombie.assignFlowField(flow);
-			}
 		}
 	}
 
@@ -314,7 +318,7 @@ public class Model
 		}
 	}
 
-	public tile[][] GetWorldTiles()
+	public Tile[][] GetWorldTiles()
 	{
 		return tiles;
 	}
@@ -339,28 +343,29 @@ public class Model
 		return Score;
 	}
 
-	public int[][] generateHeatMap(tile goalTile)
+	public int[][] generateHeatMap(Tile goalTile)
 	{
-		// use Djikstra's Algorithm
+		// use Dijkstra's Algorithm
 
 		int[][] distances = new int[tiles.length][tiles[0].length];
+		boolean[][] visited = new boolean[tiles.length][tiles[0].length];
 
 		for (int i = 0; i < distances.length; i++)
 		{
 			Arrays.fill(distances[i], Integer.MAX_VALUE);
+			Arrays.fill(visited[i], false);
 		}
 
 		distances[goalTile.y][goalTile.x] = 0;
 
-		Queue<tile> openList = new LinkedList<>();
+		Queue<Tile> openList = new LinkedList<>();
 		openList.add(goalTile);
+		visited[goalTile.y][goalTile.x] = true;
 
 		while (!openList.isEmpty())
 		{
-			tile selected = openList.remove();
+			Tile selected = openList.remove();
 			int selectedDistance = distances[selected.y][selected.x];
-
-			ArrayList<tile> neighbors = new ArrayList<>();
 
 			// Check if neighbors within array bounds
 			for (int i = selected.y - 1; i <= selected.y + 1; i++)
@@ -373,23 +378,22 @@ public class Model
 						continue;
 					}
 
-					// Check if tile is within bounds
+					// Check if Tile is within bounds
 					if (i >= 0 && i < tiles.length && j >= 0 && j < tiles[0].length)
 					{
-						// Tile is within bounds
-						// Add to neighbor list
-						neighbors.add(tiles[i][j]);
-					}
-				}
-			}
+						// see if we should update its distance value
+						Tile neighbor = tiles[i][j];
+						int neighborDistance = distances[neighbor.y][neighbor.x];
 
-			for (tile neighbor : neighbors)
-			{
-				int neighborDistance = distances[neighbor.y][neighbor.x];
-				if (neighbor.isNotWall() && selectedDistance + 1 < neighborDistance)
-				{
-					distances[neighbor.y][neighbor.x] = selectedDistance + 1;
-					openList.add(neighbor);
+						// if we should, update and add to openList so we can check its respective
+						// neighbors
+						if (!visited[neighbor.y][neighbor.x] && neighbor.isNotWall() && selectedDistance + 1 < neighborDistance)
+						{
+							distances[neighbor.y][neighbor.x] = selectedDistance + 1;
+							openList.add(neighbor);
+							visited[neighbor.y][neighbor.x] = true;
+						}
+					}
 				}
 			}
 		}
@@ -397,7 +401,7 @@ public class Model
 		return distances;
 	}
 
-	public Vector2D[][] generateFlowField(tile goalTile)
+	public Vector2D[][] generateFlowField(Tile goalTile)
 	{
 		int[][] heatMap = generateHeatMap(goalTile);
 
@@ -423,11 +427,11 @@ public class Model
 							continue;
 						}
 
-						// Check if neighbor tile is within bounds and heatMap value is not zero (to
+						// Check if neighbor Tile is within bounds and heatMap value is not zero (to
 						// avoid divide by zero)
 						if (i >= 0 && i < vectorField.length && j >= 0 && j < vectorField[0].length && heatMap[i][j] != 0)
 						{
-							// check if neighbor tile is not a wall
+							// check if neighbor Tile is not a wall
 							if (tiles[i][j].isNotWall())
 							{
 								// if it isn't then we get the normalized cardinal direction vector and let its
@@ -437,7 +441,9 @@ public class Model
 								neighbor.Normalize();
 								neighbor.Scale(1.0f / heatMap[i][j]);
 								flow.Add(neighbor);
-							} else
+							}
+
+							else
 							{
 								// if it's a wall tile, add a vector pointing away from the wall to avoid it
 								Vector2D wallAvoidance = new Vector2D(x - j, y - i);
@@ -450,7 +456,7 @@ public class Model
 				}
 
 				flow.Normalize();
-				flow.y = -flow.y; // idk bruh it works
+				flow.y = -flow.y; // unit gameobjects use opposite direct for y
 				vectorField[y][x] = flow;
 			}
 		}
@@ -468,7 +474,7 @@ public class Model
 				{
 					for (int j = x - 1; j <= x + 1; j++)
 					{
-						// Check if neighbor tile is within bounds and heatMap value is not zero (to
+						// Check if neighbor Tile is within bounds and heatMap value is not zero (to
 						// avoid divide by zero)
 						if (i >= 0 && i < vectorField.length && j >= 0 && j < vectorField[0].length && heatMap[i][j] != 0)
 						{
