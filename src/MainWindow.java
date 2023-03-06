@@ -147,6 +147,11 @@ public class MainWindow
 		// score update
 		frame.setTitle("Score =  " + gameworld.getScore());
 
+		if (gameworld.getScore() == 0)
+		{
+			startGame = false;
+		}
+
 	}
 
 }

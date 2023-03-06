@@ -1,4 +1,8 @@
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Point;
 import java.io.File;
@@ -67,7 +71,7 @@ public class Viewer extends JPanel
 		tiles = gameworld.GetWorldTiles();
 		tileSize = gameworld.getTileSize();
 
-		File AtlasFile = new File("res/tilemap.png");
+		File AtlasFile = new File("res/tilemap-sheet.png");
 		try
 		{
 			textureAtlas = ImageIO.read(AtlasFile);
@@ -104,7 +108,36 @@ public class Viewer extends JPanel
 		drawViewPortBackground(g);
 
 		drawUnits(gameworld.getZombies(), g, scale);
-		// drawUnits(gameworld.getEnemies(), g, scale);
+		drawUnits(gameworld.getEnemies(), g, scale);
+
+		Point[] bounds = gameworld.getSelectBounds();
+		if (bounds != null && bounds[0] != null && bounds[1] != null)
+		{
+			Graphics2D g2 = (Graphics2D)g;
+			g2.setStroke(new BasicStroke(5));
+			g2.setColor(Color.GREEN);
+			g2.drawPolygon(new int[]
+			{ bounds[0].x, bounds[1].x, bounds[1].x, bounds[0].x }, new int[]
+			{ bounds[0].y, bounds[0].y, bounds[1].y, bounds[1].y }, 4);
+		}
+
+		if (gameworld.getScore() == 0)
+		{
+			Graphics2D g2 = (Graphics2D)g;
+			g2.setFont(new Font("TimesRoman", Font.PLAIN, 50));
+			g2.setColor(Color.RED);
+			g2.drawString("GAME OVER", viewWidth / 2 - 125, viewHeight / 2);
+			g2.drawString("HIGH SCORE: " + gameworld.getHighScore(), viewWidth / 2 - 150, viewHeight / 2 + 75);
+		}
+
+		if (gameworld.getEnemies().size() == 0)
+		{
+			Graphics2D g2 = (Graphics2D)g;
+			g2.setFont(new Font("TimesRoman", Font.PLAIN, 50));
+			g2.setColor(Color.GREEN);
+			g2.drawString("YOU WIN", viewWidth / 2 - 100, viewHeight / 2);
+			g2.drawString("HIGH SCORE: " + gameworld.getHighScore(), viewWidth / 2 - 150, viewHeight / 2 + 75);
+		}
 	}
 
 	public void updateCamera()
@@ -140,7 +173,7 @@ public class Viewer extends JPanel
 				if (tileX >= 0 && tileX < tiles[0].length && tileY >= 0 && tileY < tiles.length)
 				{
 					Point pos = globalToScreenCoords(camOffsetX + (x - (tilesX / 2) - 1) * tileSize, camOffsetY + (y - (tilesY / 2) - 1) * tileSize);
-					g.drawImage(textureAtlas, pos.x, pos.y, (int)(pos.x + tileSize * zoom), (int)(pos.y + tileSize * zoom), tiles[tileY][tileX].textureIndex * tileSize, 0, tiles[tileY][tileX].textureIndex * tileSize + tileSize, tileSize, null);
+					g.drawImage(textureAtlas, pos.x, pos.y, (int)Math.ceil(pos.x + tileSize * zoom), (int)Math.ceil(pos.y + tileSize * zoom), tiles[tileY][tileX].textureIndex * tileSize, 0, tiles[tileY][tileX].textureIndex * tileSize + tileSize, tileSize, null);
 				}
 			}
 		}
@@ -150,11 +183,17 @@ public class Viewer extends JPanel
 	{
 		for (Unit unit : units)
 		{
-			drawUnit((int)unit.getGameObject().getCentre().getX(), (int)unit.getGameObject().getCentre().getY(), (int)unit.getGameObject().getWidth(), (int)unit.getGameObject().getHeight(), scale, unit.getFrames(), unit.getGameObject().getTexture(), g);
+			boolean faceRight = true;
+			if (unit.getMovement().x < 0)
+			{
+				faceRight = false;
+			}
+
+			drawUnit((int)unit.getGameObject().getCentre().getX(), (int)unit.getGameObject().getCentre().getY(), (int)unit.getGameObject().getWidth(), (int)unit.getGameObject().getHeight(), scale, unit.getFrames(), unit.getGameObject().getTexture(), faceRight, g);
 		}
 	}
 
-	private void drawUnit(int x, int y, int width, int height, int scale, int frames, String texture, Graphics g)
+	private void drawUnit(int x, int y, int width, int height, int scale, int frames, String texture, boolean faceRight, Graphics g)
 	{
 		Image myImage = imageCache.get(texture);
 		if (myImage == null)
@@ -174,7 +213,16 @@ public class Viewer extends JPanel
 
 		int currentPositionInAnimation = ((int)((CurrentAnimationTime % (10 * frames)) / 10)) * width; // slows down animation so every 10 frames we get another frame so every 100ms
 		Point pos = globalToScreenCoords(x, y);
-		g.drawImage(myImage, pos.x, pos.y, Math.round(pos.x + width * scale * zoom), Math.round(pos.y + height * scale * zoom), currentPositionInAnimation, 0, currentPositionInAnimation + width - 1, height, null);
+		if (faceRight)
+		{
+			g.drawImage(myImage, pos.x, pos.y, Math.round(pos.x + width * scale * zoom), Math.round(pos.y + height * scale * zoom), currentPositionInAnimation, 0, currentPositionInAnimation + width - 1, height, null);
+		}
+
+		else
+		{
+			g.drawImage(myImage, pos.x, pos.y, Math.round(pos.x + width * scale * zoom), Math.round(pos.y + height * scale * zoom), currentPositionInAnimation + width - 1, 0, currentPositionInAnimation, height, null);
+
+		}
 	}
 
 }

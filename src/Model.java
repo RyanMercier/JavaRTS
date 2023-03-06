@@ -60,8 +60,14 @@ public class Model
 	private CopyOnWriteArrayList<Unit> zombiesList = new CopyOnWriteArrayList<Unit>();
 	private CopyOnWriteArrayList<Unit> enemiesList = new CopyOnWriteArrayList<Unit>();
 	ArrayList<Unit> selected;
+	Point[] selectBounds = new Point[2];
 
-	private int Score = 0;
+	public static String humanTexture = "res/human-sheet.png";
+	public static String farmerTexture = "res/farmer-sheet.png";
+	public static String zombieTexture = "res/zombie-sheet.png";
+
+	private int Score = 1;
+	private int highScore;
 
 	public Model(int frameWidth, int frameHeight)
 	{
@@ -73,16 +79,19 @@ public class Model
 		viewHeight = frameHeight;
 
 		//
-		for (int i = 0; i < 1000; i++)
-		{
-			zombiesList.add(new Unit(idCount++, "res/pirateship.png", 16, 16, new Point3f(getRandomInt(100, 2500), getRandomInt(100, 2500), 0), tileSize, 1));
-		}
+		zombiesList.add(new Unit(idCount++, Type.ZOMBIE, zombieTexture, 32, 32, new Point3f(1000, 1000, 0), tileSize, 3));
 
 		// Enemies starting with four
-//		enemiesList.add(new Unit(idCount++, "res/UFO.png", 50, 50, new Point3f(((float)Math.random() * 50 + 400), 0, 0), tileSize, 1));
-//		enemiesList.add(new Unit(idCount++, "res/UFO.png", 50, 50, new Point3f(((float)Math.random() * 50 + 500), 0, 0), tileSize, 1));
-//		enemiesList.add(new Unit(idCount++, "res/UFO.png", 50, 50, new Point3f(((float)Math.random() * 100 + 500), 0, 0), tileSize, 1));
-//		enemiesList.add(new Unit(idCount++, "res/UFO.png", 50, 50, new Point3f(((float)Math.random() * 100 + 400), 0, 0), tileSize, 1));
+
+		for (int i = 0; i < 600; i++)
+		{
+			enemiesList.add(new Unit(idCount++, Type.HUMAN, humanTexture, 32, 32, new Point3f(getRandomInt(100, 3100), getRandomInt(100, 3100), 0), tileSize, 3));
+		}
+
+		for (int i = 0; i < 500; i++)
+		{
+			enemiesList.add(new Unit(idCount++, Type.FARMER, farmerTexture, 32, 32, new Point3f(getRandomInt(100, 3100), getRandomInt(100, 3100), 0), tileSize, 3));
+		}
 
 	}
 
@@ -274,6 +283,8 @@ public class Model
 		boolean rightMousePressed = controller.isRightMousePressed();
 		boolean rightMouseReleased = controller.isRightMouseReleased();
 
+		selectBounds[1] = controller.getDragPosition();
+
 		Vector2D[][] flow;
 
 		if (leftMouseClicked)
@@ -284,7 +295,7 @@ public class Model
 				Tile target = getTileAt(screenToGlobalCoords(mousePos1));
 				flow = generateFlowField(target);
 
-				for (Unit zombie : zombiesList)
+				for (Unit zombie : selected)
 				{
 					zombie.assignFlowField(flow);
 				}
@@ -296,6 +307,7 @@ public class Model
 		else if (rightMousePressed)
 		{
 			mousePos1 = controller.getMousePosition();
+			selectBounds[0] = mousePos1;
 		}
 
 		else if (rightMouseReleased)
@@ -307,6 +319,7 @@ public class Model
 			Point worldPos2 = screenToGlobalCoords(mousePos2);
 
 			selected = getUnitsInArea(worldPos1, worldPos2);
+			selectBounds[0] = null;
 		}
 	}
 
@@ -314,7 +327,74 @@ public class Model
 	{
 		for (Unit zombie : zombiesList)
 		{
+			for (Unit other : zombiesList)
+			{
+				if (other != zombie)
+				{
+					float deltaX = zombie.getGameObject().getCentre().getX() - other.getGameObject().getCentre().getX();
+					float deltaY = zombie.getGameObject().getCentre().getY() - other.getGameObject().getCentre().getY();
+
+					if (deltaX * deltaX + deltaY * deltaY <= other.collisionRadius * other.collisionRadius)
+					{
+						if (deltaX > 0 && deltaY > 0)
+						{
+							// other is to the left and up
+							other.getGameObject().getCentre().ApplyVector(new Vector3f(-1 * zombie.pushForce, 1 * zombie.pushForce, 0));
+						}
+
+						if (deltaX < 0 && deltaY > 0)
+						{
+							// other is to the right and up
+							other.getGameObject().getCentre().ApplyVector(new Vector3f(1 * zombie.pushForce, 1 * zombie.pushForce, 0));
+						}
+
+						if (deltaX > 0 && deltaY < 0)
+						{
+							// other is to the left and down
+							other.getGameObject().getCentre().ApplyVector(new Vector3f(-1 * zombie.pushForce, -1 * zombie.pushForce, 0));
+						}
+
+						if (deltaX < 0 && deltaY < 0)
+						{
+							// other is to the right and down
+							other.getGameObject().getCentre().ApplyVector(new Vector3f(1 * zombie.pushForce, -1 * zombie.pushForce, 0));
+						}
+					}
+				}
+			}
+
+			int index = 0;
+			for (Unit human : enemiesList)
+			{
+				float deltaX = zombie.getGameObject().getCentre().getX() - human.getGameObject().getCentre().getX();
+				float deltaY = zombie.getGameObject().getCentre().getY() - human.getGameObject().getCentre().getY();
+
+				if (deltaX * deltaX + deltaY * deltaY <= human.collisionRadius * human.collisionRadius)
+				{
+					Unit infected = enemiesList.remove(index);
+					infected.setType(Type.ZOMBIE);
+					zombiesList.add(infected);
+				}
+
+				if (deltaX * deltaX + deltaY * deltaY <= human.shotRadius * human.shotRadius && human.Shoot() && (deltaX < 0 == human.getMovement().x < 0))
+				{
+					zombiesList.remove(zombie);
+				}
+
+				index++;
+			}
+
 			zombie.Update();
+		}
+
+		for (Unit human : enemiesList)
+		{
+			human.Update();
+		}
+
+		if (zombiesList.size() > highScore)
+		{
+			highScore = zombiesList.size();
 		}
 	}
 
@@ -340,7 +420,17 @@ public class Model
 
 	public int getScore()
 	{
-		return Score;
+		return zombiesList.size();
+	}
+
+	public int getHighScore()
+	{
+		return highScore;
+	}
+
+	public Point[] getSelectBounds()
+	{
+		return selectBounds;
 	}
 
 	public int[][] generateHeatMap(Tile goalTile)

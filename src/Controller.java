@@ -49,6 +49,7 @@ public class Controller implements KeyListener, MouseListener, MouseMotionListen
 	private static boolean rightMousePressed = false;
 	private static boolean rightMouseReleased = false;
 	private static Point mousePosition = new Point(0, 0);
+	private static Point dragPosition = new Point(0, 0);
 
 	private static final Controller instance = new Controller();
 
@@ -129,7 +130,7 @@ public class Controller implements KeyListener, MouseListener, MouseMotionListen
 	@Override
 	public void mouseDragged(MouseEvent e)
 	{
-		// TODO Auto-generated method stub
+		dragPosition = e.getPoint();
 	}
 
 	@Override
@@ -156,6 +157,7 @@ public class Controller implements KeyListener, MouseListener, MouseMotionListen
 		{
 			rightMousePressed = true;
 			mousePosition = e.getPoint();
+			dragPosition = mousePosition;
 		}
 	}
 
@@ -167,6 +169,7 @@ public class Controller implements KeyListener, MouseListener, MouseMotionListen
 			rightMousePressed = false;
 			rightMouseReleased = true;
 			mousePosition = e.getPoint();
+			dragPosition = null;
 		}
 
 	}
@@ -251,6 +254,11 @@ public class Controller implements KeyListener, MouseListener, MouseMotionListen
 	public Point getMousePosition()
 	{
 		return mousePosition;
+	}
+
+	public Point getDragPosition()
+	{
+		return dragPosition;
 	}
 
 	public boolean isRightMousePressed()
